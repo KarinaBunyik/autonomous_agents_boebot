@@ -26,7 +26,7 @@ PUB Go                                                ' Startup method
     
     Display                                           ' Call display method (below)
     time.Pause(20)                                    ' Wait 20 ms before repeating   
-
+// Hello world!
 PUB Display                                           ' Display method for IR detectors
 
   pst.Home                                            ' Send cursor home (top-left)         
