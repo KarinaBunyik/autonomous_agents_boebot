@@ -11,10 +11,10 @@ void setup()                                 // Built-in initialization block
 
 void loop()                                  // Main loop auto-repeats
 {
-  Serial.print("A3 = ");                     // Display "A3 = "
-  Serial.print(volts(A3));                    // Display measured A3 volts
+  Serial.print("A2 = ");                     // Display "A3 = "
+  Serial.print(volts(A2));                    // Display measured A3 volts
   Serial.println(" volts");                  // Display " volts" & newline
-  delay(1000);                               // Delay for 1 second
+  delay(100);                               // Delay for 1 second
 }
                                              
 float volts(int adPin)                       // Measures volts at adPin
