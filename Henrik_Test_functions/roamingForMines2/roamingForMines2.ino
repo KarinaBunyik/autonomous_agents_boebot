@@ -4,12 +4,11 @@
 //////////// Parameters  //////////////////////////////////////////////////
 const int speedZero=1500;           //servo speed for zero
 const int speedMax=200;             //The servo number for max
-const double armPeriod = 2000;
+const double armPeriod = 1000;
 const int speedLeftIsMax=1;        //if left is higher, set to 1, else -1
 const int minePin=A3;
-const int maxAngle = 60;            //Range of movement
+const int maxAngle = 80;            //Range of movement
 const int armCenter = 90;           //middle position of arm
-const int debugPins[]= {5, 6, 7, 8};
 const int noOfSlices = 3;           //Mustn't be changed from 3
 const double pi = 3.14159265358979;
 //dt=1;//miliseconds
@@ -29,16 +28,14 @@ unsigned long startTime;
 int mineSensor;
 int minePrevSensor;
 unsigned long timer(boolean set = false);
+double rightRead;            // slice value right
+double centreRead;           // ...centre...
+double leftRead;             // ...right...
+double treshold = 0.8;       // How large a slice value must be not to be ignored
 
 void setup(){                                 // Built-in initialization block
   pinMode(7, INPUT);                         // Set right sensor pin to input
   pinMode(5, INPUT);                         // Set left sensor pin to input 
-/*
-  pinMode(debugPins[0], OUTPUT); // sets up binary output one as a digital output
-  pinMode(debugPins[1], OUTPUT); //and so on...
-  pinMode(debugPins[2], OUTPUT);
-  pinMode(debugPins[3], OUTPUT); 
-*/
   
   servoArm.attach(11);    
   servoLeft.attach(13);                      // Attach left signal to pin 13
@@ -57,57 +54,75 @@ void loop(){
 
   int irArm = 1 - irDetect(2, 3, 38000);       // Check for objects on left
 
-  Serial.print("irArm = ");
-  Serial.println(irArm);
+  //Serial.print("irArm = ");
+  //Serial.println(irArm);
   
   double angle = armCenter + maxAngle*sin(double(2*pi*millis())/(armPeriod));
   servoArm.write(angle);
   
 
   if ((angle > maxAngle + armCenter - sliceCoverage ) && (angle <= maxAngle + armCenter)){
-    visibilitySlices[1] = (1-sliceDecay)*double(irArm) + sliceDecay*visibilitySlices[1];
+    // Right slice
+    visibilitySlices[0] = sliceDecay*double(irArm) + (1-sliceDecay)*visibilitySlices[0];
   }
   else if ((angle > maxAngle + armCenter - 2*sliceCoverage ) && (angle <= maxAngle + armCenter - sliceCoverage )){
-    visibilitySlices[2] = (1-sliceDecay)*double(irArm) + sliceDecay*visibilitySlices[2];
+    // Middle slice
+    visibilitySlices[1] = sliceDecay*double(irArm) + (1-sliceDecay)*visibilitySlices[1];
   }
-  else {// if ((angle > armCenter - maxAngle) && (angle <= maxAngle + armCenter - sliceCoverage )){
-    visibilitySlices[3] = (1-sliceDecay)*double(irArm) + sliceDecay*visibilitySlices[3];
+  else if ((angle > armCenter - maxAngle) && (angle <= maxAngle + armCenter - sliceCoverage )){
+    // Left slice
+    visibilitySlices[2] = sliceDecay*double(irArm) + (1-sliceDecay)*visibilitySlices[2];
   }
-  //else{
-  //}
+  else{
+  }
   
   //Serial.println(currState);
   //Start of statemachine
-  currState = 0;
+  
   switch (currState){
       case 0:
         //Some init that we may need to redo here
         // for now, keep empty
-        /*
+        
+        Serial.print(visibilitySlices[0]);
+        Serial.print("  ");
         Serial.print(visibilitySlices[1]);
         Serial.print("  ");
-        Serial.print(visibilitySlices[2]);
-        Serial.print("  ");
-        Serial.println(visibilitySlices[3]);
-        */
-        //currState=1;
+        Serial.println(visibilitySlices[2]);
+        
+        rightRead = visibilitySlices[0];
+        centreRead = visibilitySlices[1];
+        leftRead = visibilitySlices[2];
+        
+        if(rightRead < treshold){
+           rightRead = 0; 
+        }
+        if(centreRead < treshold){
+           centreRead = 0; 
+        }
+        if(leftRead < treshold) {
+           leftRead = 0; 
+        }
+        
+        rightWheel((1-2*centreRead)*(1-2*rightRead));
+        leftWheel((1-2*centreRead)*1-2*leftRead);
         break;
-      case 1: 
+      case 1:
         forward();
         currState=2;
         break;
       case 2: //idle state
-          if ((visibilitySlices[1] <= 0.1) && (visibilitySlices[3] <= 0.1)){        // If both sensors have input
+          if ((visibilitySlices[0] <= 0.1) && (visibilitySlices[2] <= 0.1)){        // If both sensors have input
             //Serial.println("both");
             backward();
             timer(true);
             currState=3;
-          }else if (visibilitySlices[1] <= 0.1){                        // If only left whisker contact
+          }else if (visibilitySlices[0] <= 0.1){                        // If only left whisker contact
             //Serial.println("left");
             turnRight();
             //timer(true);
             currState=5;
-          }else if (visibilitySlices[3] <= 0.1){                       // If only right whisker contact
+          }else if (visibilitySlices[2] <= 0.1){                       // If only right whisker contact
             //Serial.println("right");
             turnLeft();
             //timer(true);
@@ -133,7 +148,7 @@ void loop(){
          }
          break;  
       case 5:
-         if ((visibilitySlices[1] >= 0.9) && (visibilitySlices[3] >= 0.9)){     // If both sensors have no input
+         if ((visibilitySlices[0] >= 0.9) && (visibilitySlices[2] >= 0.9)){     // If both sensors have no input
            currState=1;
          }
          break;  
@@ -144,12 +159,12 @@ void loop(){
       
 
 //Sets the spped, input is the speed and should be between -1 and 1
-void leftWheel(int sp){ 
-  servoLeft.writeMicroseconds(speedZero+(speedMax*sp)*speedLeftIsMax);
+void leftWheel(double sp){ 
+  servoLeft.writeMicroseconds(speedZero+(double(speedMax)*sp)*speedLeftIsMax);
 }
 
-void rightWheel(int sp){ 
-  servoRight.writeMicroseconds(speedZero-(speedMax*sp)*speedLeftIsMax);
+void rightWheel(double sp){ 
+  servoRight.writeMicroseconds(speedZero-double((speedMax)*sp)*speedLeftIsMax);
 }
 
 void forward(){
@@ -203,11 +218,4 @@ boolean mineSens(){
   }
 }
 
-void debugWrite(int n){
-  
-  digitalWrite(debugPins[0],(n==1 || n==3 || n==5 || n==7 || n==9)); //Write "0" to the display
-  digitalWrite(debugPins[1],(n==2 || n==3 || n==6 || n==7));
-  digitalWrite(debugPins[2],(n==4 || n==5 || n==6 || n==7));
-  digitalWrite(debugPins[3],(n==8 || n==7));
-}
 
