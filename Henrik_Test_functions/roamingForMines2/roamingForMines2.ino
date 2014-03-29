@@ -4,15 +4,14 @@
 //////////// Parameters  //////////////////////////////////////////////////
 const int speedZero=1500;           //servo speed for zero
 const int speedMax=200;             //The servo number for max
-const int armSpeedZero=1500; 
-const int armSpeedMax=200;
-const int speedArmIsMax=1;
+const double armPeriod = 2000;
 const int speedLeftIsMax=1;        //if left is higher, set to 1, else -1
 const int minePin=A3;
 const int maxAngle = 60;            //Range of movement
 const int armCenter = 90;           //middle position of arm
 const int debugPins[]= {5, 6, 7, 8};
-const int noOfSlices = 3;
+const int noOfSlices = 3;           //Mustn't be changed from 3
+const double pi = 3.14159265358979;
 //dt=1;//miliseconds
 ///////////////////////////////////////////////////////////////////////////
 #include <Servo.h>                           // Include servo library
@@ -20,9 +19,10 @@ const int noOfSlices = 3;
 Servo servoLeft;                             // Declare left and right servos
 Servo servoRight;
 Servo servoArm;
-int visibilitySlices[] = {0, 0, 0};
-int sliceCoverage = (2*maxAngle)/noOfSlices;
-int currState = 1;
+double visibilitySlices[] = {0, 0, 0};
+double sliceCoverage = (2*maxAngle)/noOfSlices;
+double sliceDecay = 0.5;
+int currState = 0;
 unsigned long time;
 unsigned long dt;
 unsigned long startTime;
@@ -33,16 +33,13 @@ unsigned long timer(boolean set = false);
 void setup(){                                 // Built-in initialization block
   pinMode(7, INPUT);                         // Set right sensor pin to input
   pinMode(5, INPUT);                         // Set left sensor pin to input 
+/*
   pinMode(debugPins[0], OUTPUT); // sets up binary output one as a digital output
   pinMode(debugPins[1], OUTPUT); //and so on...
   pinMode(debugPins[2], OUTPUT);
   pinMode(debugPins[3], OUTPUT); 
+*/
   
-  //int irLeftOld = 1 - irDetect(9, 10, 38000);
-  //int irRightOld = 1 - irDetect(2, 3, 38000);;
-  
-  //tone(4, 3000, 1000);                       // Play tone for 1 second
-  //delay(1000);                               // Delay to finish tone
   servoArm.attach(11);    
   servoLeft.attach(13);                      // Attach left signal to pin 13
   servoRight.attach(12);                     // Attach right signal to pin 12
@@ -50,46 +47,50 @@ void setup(){                                 // Built-in initialization block
 }  
  
 void loop(){
-  delay(100);
-  debugWrite(currState);
-  Serial.print("state = ");                     // Display "A3 = "
-  Serial.println(currState);                    // Display measured A3 volts
+  delay(10);
+  //debugWrite(currState);
+  //Serial.print("state = ");                     // Display "A3 = "
+  //Serial.println(currState);                    // Display measured A3 volts
   dt=millis()-time;
   time = millis();
   
 
-
-  // Stuff to do everyloop
-  //int irLeft = 1 - irDetect(9, 10, 38000);       // Check for objects on left
-  //int irRight = 1 - irDetect(2, 3, 38000);       // Check for objects on right
   int irArm = 1 - irDetect(2, 3, 38000);       // Check for objects on left
-  //Serial.print(irLeft);
-  //Serial.println(irRight);
+
   Serial.print("irArm = ");
-  Serial.print(irArm);
+  Serial.println(irArm);
   
-  double angle = armCenter + maxAngle*sin(double(millis())/1000);
+  double angle = armCenter + maxAngle*sin(double(2*pi*millis())/(armPeriod));
   servoArm.write(angle);
   
 
   if ((angle > maxAngle + armCenter - sliceCoverage ) && (angle <= maxAngle + armCenter)){
-    visibilitySlices[1] = 0.1*irArm + 0.9*visibilitySlices[1];
+    visibilitySlices[1] = (1-sliceDecay)*double(irArm) + sliceDecay*visibilitySlices[1];
   }
   else if ((angle > maxAngle + armCenter - 2*sliceCoverage ) && (angle <= maxAngle + armCenter - sliceCoverage )){
-    visibilitySlices[2] = 0.1*irArm + 0.9*visibilitySlices[2];
+    visibilitySlices[2] = (1-sliceDecay)*double(irArm) + sliceDecay*visibilitySlices[2];
   }
-  else if ((angle > armCenter - maxAngle) && (angle <= maxAngle + armCenter - sliceCoverage )){
-    visibilitySlices[3] = 0.1*irArm + 0.9*visibilitySlices[3];
+  else {// if ((angle > armCenter - maxAngle) && (angle <= maxAngle + armCenter - sliceCoverage )){
+    visibilitySlices[3] = (1-sliceDecay)*double(irArm) + sliceDecay*visibilitySlices[3];
   }
-  else{
-  }
+  //else{
+  //}
   
+  //Serial.println(currState);
   //Start of statemachine
+  currState = 0;
   switch (currState){
       case 0:
         //Some init that we may need to redo here
         // for now, keep empty
-        currState=1;
+        /*
+        Serial.print(visibilitySlices[1]);
+        Serial.print("  ");
+        Serial.print(visibilitySlices[2]);
+        Serial.print("  ");
+        Serial.println(visibilitySlices[3]);
+        */
+        //currState=1;
         break;
       case 1: 
         forward();
@@ -151,10 +152,6 @@ void rightWheel(int sp){
   servoRight.writeMicroseconds(speedZero-(speedMax*sp)*speedLeftIsMax);
 }
 
-void arm(int sp){ 
-  servoArm.writeMicroseconds(armSpeedZero+(armSpeedMax*sp)*speedArmIsMax);
-}
-
 void forward(){
   leftWheel(1);
   rightWheel(1);
@@ -188,15 +185,11 @@ unsigned long timer(boolean set){
 }
 
 int irDetect(int irLedPin, int irReceiverPin, long frequency){
-  int ir;
-  for(int i=0;i<10;i++){
-    tone(irLedPin, frequency, 8);              
-    delay(1);                                  
-    ir = digitalRead(irReceiverPin);       
-    delay(1);
-    if(ir) break;    
-  }
-  return ir;   
+  tone(irLedPin, frequency, 8);              
+  delay(1);                                  
+  int ir = digitalRead(irReceiverPin);       
+  delay(1);                                  
+  return ir;                                 
 }
 
 boolean mineSens(){

@@ -9,7 +9,7 @@ void setup()                                 // Built-in initialization block
   tone(4, 3000, 1000);                       // Play tone for 1 second
   delay(1000);                               // Delay to finish tone
 
-//  pinMode(2, INPUT);  pinMode(3, OUTPUT);   // Left IR LED & Receiver
+  pinMode(3, INPUT);  pinMode(2, OUTPUT);   // Left IR LED & Receiver
   pinMode(10, INPUT);  pinMode(9, OUTPUT);   // Right IR LED & Receiver
 
   Serial.begin(9600);                        // Set data rate to 9600 bps
@@ -17,9 +17,11 @@ void setup()                                 // Built-in initialization block
  
 void loop()                                  // Main loop auto-repeats
 {
-  int irLeft = irDetect(9, 10, 38000);       // Check for object
+  int irLeft = irDetect(2, 3, 38000);       // Check for object
+  int irRight = irDetect(9, 10, 38000);       // Check for object
 
-  Serial.println(irLeft);                    // Display 1/0 no detect/detect
+  Serial.print(1-irLeft);                    // Display 1/0 no detect/detect
+  Serial.println(1-irRight);                    // Display 1/0 no detect/detect
 
   delay(100);                                // 0.1 second delay
 }
