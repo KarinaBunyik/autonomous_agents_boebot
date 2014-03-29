@@ -52,7 +52,7 @@ void setup(){                                 // Built-in initialization block
 void loop(){
   delay(100);
   debugWrite(currState);
-  //Serial.print("state = ");                     // Display "A3 = "
+  Serial.print("state = ");                     // Display "A3 = "
   Serial.println(currState);                    // Display measured A3 volts
   dt=millis()-time;
   time = millis();
@@ -65,6 +65,7 @@ void loop(){
   int irArm = 1 - irDetect(2, 3, 38000);       // Check for objects on left
   //Serial.print(irLeft);
   //Serial.println(irRight);
+  Serial.print("irArm = ");
   Serial.print(irArm);
   
   double angle = armCenter + maxAngle*sin(double(millis())/1000);
@@ -151,7 +152,7 @@ void rightWheel(int sp){
 }
 
 void arm(int sp){ 
-  servoLeft.writeMicroseconds(armSpeedZero+(armSpeedMax*sp)*speedArmIsMax);
+  servoArm.writeMicroseconds(armSpeedZero+(armSpeedMax*sp)*speedArmIsMax);
 }
 
 void forward(){
