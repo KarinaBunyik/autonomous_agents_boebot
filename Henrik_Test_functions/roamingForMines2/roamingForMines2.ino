@@ -31,7 +31,7 @@ unsigned long timer(boolean set = false);
 double rightRead;            // slice value right
 double centreRead;           // ...centre...
 double leftRead;             // ...right...
-double treshold = 0.8;       // How large a slice value must be not to be ignored
+double treshold = 0.4;       // How large a slice value must be not to be ignored
 
 void setup(){                                 // Built-in initialization block
   pinMode(7, INPUT);                         // Set right sensor pin to input
@@ -84,12 +84,6 @@ void loop(){
         //Some init that we may need to redo here
         // for now, keep empty
         
-        Serial.print(visibilitySlices[0]);
-        Serial.print("  ");
-        Serial.print(visibilitySlices[1]);
-        Serial.print("  ");
-        Serial.println(visibilitySlices[2]);
-        
         rightRead = visibilitySlices[0];
         centreRead = visibilitySlices[1];
         leftRead = visibilitySlices[2];
@@ -104,8 +98,14 @@ void loop(){
            leftRead = 0; 
         }
         
-        rightWheel((1-2*centreRead)*(1-2*rightRead));
-        leftWheel((1-2*centreRead)*1-2*leftRead);
+        Serial.print(centreRead);
+        Serial.print("  ");
+        Serial.print(centreRead);
+        Serial.print("  ");
+        Serial.println(rightRead);
+        
+        rightWheel((1+treshold-centreRead)*(1-1.5*rightRead));
+        leftWheel((1+treshold-centreRead)*(1-1.5*leftRead));
         break;
       case 1:
         forward();
