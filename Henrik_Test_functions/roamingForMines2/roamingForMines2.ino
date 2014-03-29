@@ -62,7 +62,7 @@ void loop(){
   // Stuff to do everyloop
   //int irLeft = 1 - irDetect(9, 10, 38000);       // Check for objects on left
   //int irRight = 1 - irDetect(2, 3, 38000);       // Check for objects on right
-  int irArm = 1 - irDetect(9, 10, 38000);       // Check for objects on left
+  int irArm = 1 - irDetect(2, 3, 38000);       // Check for objects on left
   //Serial.print(irLeft);
   //Serial.println(irRight);
   Serial.print(irArm);
