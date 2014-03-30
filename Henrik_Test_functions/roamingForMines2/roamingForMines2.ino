@@ -13,6 +13,10 @@ const int maxAngle = 70;            //Range of movement
 const int armCenter = 90;           //middle position of arm
 const int noOfSlices = 3;           //Mustn't be changed from 3
 const double pi = 3.14159265358979;
+double turningTime = 0.0;
+double tresh = 0.5;
+
+
 //dt=1;//miliseconds
 ///////////////////////////////////////////////////////////////////////////
 #include <Servo.h>                           // Include servo library
@@ -45,7 +49,7 @@ void setup(){                                 // Built-in initialization block
   servoLeft.attach(13);                      // Attach left signal to pin 13
   servoRight.attach(12);                     // Attach right signal to pin 12
   Serial.begin(9600); 
-  double turningTime = 0.0;
+ 
 }  
  
 void loop(){
@@ -117,6 +121,8 @@ void loop(){
         centreRead = visibilitySlices[1];
         leftRead = visibilitySlices[0]; 
         
+
+        
         Serial.print(leftRead);
         Serial.print("  ");
         Serial.print(centreRead);
@@ -126,7 +132,8 @@ void loop(){
         //rightWheel(0);//(1-centreRead)*(1-1.5*leftRead));
         //leftWheel(0);//(1-centreRead)*(1-1.5*rightRead));
 
-        double tresh = 0.5;
+
+        
         if ((leftRead < tresh) && (centreRead < tresh) && (rightRead < tresh)){
           forward();
         }
@@ -145,7 +152,7 @@ void loop(){
          else if ((leftRead < tresh) && (centreRead < tresh) && (rightRead >= tresh)){
           timer(true);
           turningTime = 100.0;
-          currState = 1;
+          currState = 2;
         // turn a little bit away
          }
           else if ((leftRead >= tresh) && (centreRead < tresh) && (rightRead >= tresh)){
@@ -162,19 +169,8 @@ void loop(){
         // turn away
           timer(true);
           turningTime = 500.0;
-          currState = 1;
+          currState = 2;
          }
-        
-        /*
-        if(centreRead > 0.7){
-          currState = 1;
-          startTime = time;
-          
-          if(leftRead < rightRead) {
-            turnRight = 1;
-          }
-        }
-        */
         break;
       case 1: //rotate right
         if(millis() + timer() < turningTime) {
@@ -199,49 +195,8 @@ void loop(){
             currState = 0;            
           }
         break;
- 
-     /* case 2: //idle state
-          if ((visibilitySlices[0] <= 0.1) && (visibilitySlices[2] <= 0.1)){        // If both sensors have input
-            //Serial.println("both");
-            backward();
-            timer(true);
-            currState=3;
-          }else if (visibilitySlices[0] <= 0.1){                        // If only left whisker contact
-            //Serial.println("left");
-            turnRight();
-            //timer(true); 
-            currState=5;
-          }else if (visibilitySlices[2] <= 0.1){                       // If only right whisker contact
-            //Serial.println("right");
-            turnLeft();
-            //timer(true);
-            currState=5;
-          }else if (mineSens()){
-            //Serial.println("MINE!!!");
-            tone(4, 3000, 1000);
-            backward();
-            timer(true);
-            currState=3;
-          }
-          break;
-       case 3:
-         if (timer() > 500){     // If both sensors have no input
-           timer(true);
-           turnLeft();
-           currState=4;
-         }
-         break;  
-      case 4:
-         if (timer() > 400){     // If both sensors have no input
-           currState=1;
-         }
-         break;  
-      case 5:
-         if ((visibilitySlices[0] >= 0.9) && (visibilitySlices[2] >= 0.9)){     // If both sensors have no input
-           currState=1;
-         }
-         break;*/  
-    }   
+  }
+       
 }     
       
       
