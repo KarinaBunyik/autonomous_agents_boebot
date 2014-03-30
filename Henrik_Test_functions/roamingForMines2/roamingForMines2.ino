@@ -1,4 +1,4 @@
-// Robotics with the BOE Shield - RoamingWithWhiskers
+// Robotics with the BOE Shield
 // Go forward.  Back up and turn if whiskers indicate BOE Shield bot bumped
 // into something.
 //////////// Parameters  //////////////////////////////////////////////////
@@ -6,7 +6,9 @@ const int speedZero=1500;           //servo speed for zero
 const int speedMax=200;             //The servo number for max
 const double armPeriod = 1000;
 const int speedLeftIsMax=1;        //if left is higher, set to 1, else -1
-const int minePin=A3;
+const int minePin = A3;
+const int criticalReading = 35;    //Below this reading mine is declared 
+const int rotationTime = 1000;     // If a mine is detected, rotate for this time
 const int maxAngle = 80;            //Range of movement
 const int armCenter = 90;           //middle position of arm
 const int noOfSlices = 3;           //Mustn't be changed from 3
@@ -19,8 +21,10 @@ Servo servoLeft;                             // Declare left and right servos
 Servo servoRight;
 Servo servoArm;
 double visibilitySlices[] = {0, 0, 0};
-double sliceCoverage = (2*maxAngle)/noOfSlices;
+double sliceCoverageLR = (2*maxAngle)/(noOfSlices+1);
+double sliceCoverageC = 2*(2*maxAngle)/(noOfSlices+1);
 double sliceDecay = 0.5;
+boolean turnRight = 1;       // Rotate in this direction if avoiding mine
 int currState = 0;
 unsigned long time;
 unsigned long dt;
@@ -31,7 +35,6 @@ unsigned long timer(boolean set = false);
 double rightRead;            // slice value right
 double centreRead;           // ...centre...
 double leftRead;             // ...right...
-double treshold = 0.4;       // How large a slice value must be not to be ignored
 
 void setup(){                                 // Built-in initialization block
   pinMode(7, INPUT);                         // Set right sensor pin to input
@@ -51,27 +54,31 @@ void loop(){
   dt=millis()-time;
   time = millis();
   
+  int readingArm = 0;//1 - irDetect(2, 3, 38000);       // Check for objects on left
+  mineSensor = analogRead(minePin);         // Is a mine spotted?
+  
+  if(mineSensor < criticalReading && mineSensor!= 0) {
+    readingArm = 1;                                 // Is anything spotted?
+  }
 
-  int irArm = 1 - irDetect(2, 3, 38000);       // Check for objects on left
-
-  //Serial.print("irArm = ");
-  //Serial.println(irArm);
+  //Serial.print("readingArm = ");
+  //Serial.println(readingArm);
   
   double angle = armCenter + maxAngle*sin(double(2*pi*millis())/(armPeriod));
   servoArm.write(angle);
   
 
-  if ((angle > maxAngle + armCenter - sliceCoverage ) && (angle <= maxAngle + armCenter)){
+  if ((angle > maxAngle + armCenter - sliceCoverageLR ) && (angle <= maxAngle + armCenter)){
     // Right slice
-    visibilitySlices[0] = sliceDecay*double(irArm) + (1-sliceDecay)*visibilitySlices[0];
+    visibilitySlices[0] = sliceDecay*double(readingArm) + (1-sliceDecay)*visibilitySlices[0];
   }
-  else if ((angle > maxAngle + armCenter - 2*sliceCoverage ) && (angle <= maxAngle + armCenter - sliceCoverage )){
+  else if ((angle > maxAngle + armCenter - 2*sliceCoverageC ) && (angle <= maxAngle + armCenter - sliceCoverageLR )){
     // Middle slice
-    visibilitySlices[1] = sliceDecay*double(irArm) + (1-sliceDecay)*visibilitySlices[1];
+    visibilitySlices[1] = sliceDecay*double(readingArm) + (1-sliceDecay)*visibilitySlices[1];
   }
-  else if ((angle > armCenter - maxAngle) && (angle <= maxAngle + armCenter - sliceCoverage )){
+  else if ((angle > armCenter - maxAngle) && (angle <= maxAngle + armCenter - sliceCoverageC )){
     // Left slice
-    visibilitySlices[2] = sliceDecay*double(irArm) + (1-sliceDecay)*visibilitySlices[2];
+    visibilitySlices[2] = sliceDecay*double(readingArm) + (1-sliceDecay)*visibilitySlices[2];
   }
   else{
   }
@@ -84,34 +91,46 @@ void loop(){
         //Some init that we may need to redo here
         // for now, keep empty
         
-        rightRead = visibilitySlices[0];
+        rightRead = visibilitySlices[2];
         centreRead = visibilitySlices[1];
-        leftRead = visibilitySlices[2];
+        leftRead = visibilitySlices[0];
         
-        if(rightRead < treshold){
-           rightRead = 0; 
-        }
-        if(centreRead < treshold){
-           centreRead = 0; 
-        }
-        if(leftRead < treshold) {
-           leftRead = 0; 
-        }
-        
-        Serial.print(centreRead);
+        Serial.print(leftRead);
         Serial.print("  ");
         Serial.print(centreRead);
         Serial.print("  ");
         Serial.println(rightRead);
         
-        rightWheel((1+treshold-centreRead)*(1-1.5*rightRead));
-        leftWheel((1+treshold-centreRead)*(1-1.5*leftRead));
+        rightWheel((1-centreRead)*(1-1.5*leftRead));
+        leftWheel((1-centreRead)*(1-1.5*rightRead));
+        /*
+        if(centreRead > 0.9){
+          currState = 1;
+          startTime = time;
+          
+          if(leftRead < rightRead) {
+            turnRight = 1;
+          }
+        }*/
         break;
-      case 1:
-        forward();
-        currState=2;
+      case 1: //rotate
+        if(time - startTime < rotationTime) {
+          if(turnRight){
+            rightWheel(1);
+            leftWheel(-1);
+          }
+          else{
+            rightWheel(-1);
+            leftWheel(1);            
+          }
+        }
+        else{
+          currState = 0;
+        }
         break;
-      case 2: //idle state
+ 
+ 
+     /* case 2: //idle state
           if ((visibilitySlices[0] <= 0.1) && (visibilitySlices[2] <= 0.1)){        // If both sensors have input
             //Serial.println("both");
             backward();
@@ -151,7 +170,7 @@ void loop(){
          if ((visibilitySlices[0] >= 0.9) && (visibilitySlices[2] >= 0.9)){     // If both sensors have no input
            currState=1;
          }
-         break;  
+         break;*/  
     }   
 }     
       
@@ -171,7 +190,7 @@ void forward(){
   leftWheel(1);
   rightWheel(1);
 }
-
+/*
 void turnLeft(){
   leftWheel(-1);
   rightWheel(1);
@@ -181,7 +200,7 @@ void turnRight(){
   leftWheel(1);
   rightWheel(-1);                            
 }
-
+*/
 void backward(){
   leftWheel(-1);
   rightWheel(-1);
