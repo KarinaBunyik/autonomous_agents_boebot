@@ -3,13 +3,13 @@
 // into something.
 //////////// Parameters  //////////////////////////////////////////////////
 const int speedZero=1500;           //servo speed for zero
-const int speedMax=200;             //The servo number for max
+const int speedMax=100;             //The servo number for max
 const double armPeriod = 2000;
-const int speedLeftIsMax=1;        //if left is higher, set to 1, else -1
+const int speedLeftIsMax = 1;        //if left is higher, set to 1, else -1
 const int minePin = A3;
-const int criticalReading = 7;    //Below this reading mine is declared 
+const int criticalReading = 10;    //Below this reading mine is declared 
 const int rotationTime = 1000;     // If a mine is detected, rotate for this time
-const int maxAngle = 80;            //Range of movement
+const int maxAngle = 70;            //Range of movement
 const int armCenter = 90;           //middle position of arm
 const int noOfSlices = 3;           //Mustn't be changed from 3
 const double pi = 3.14159265358979;
@@ -23,7 +23,8 @@ Servo servoArm;
 double visibilitySlices[] = {0, 0, 0};
 double sliceCoverageLR = (2*maxAngle)/(noOfSlices+1);
 double sliceCoverageC = (2*maxAngle)/(noOfSlices+1);
-double sliceDecay = 0.1;
+double sliceDecayUp = 0.7;
+double sliceDecayDown = 0.05;
 boolean turnRight = 1;       // Rotate in this direction if avoiding mine
 int currState = 0;
 unsigned long time;
@@ -61,23 +62,42 @@ void loop(){
     readingArm = 1;                                 // Is anything spotted?
   }
 
-  //Serial.print("readingArm = ");
-  //Serial.println(readingArm);
+  //Serial.println(mineSensor);
   
   double angle = armCenter + maxAngle*sin(double(2*pi*millis())/(armPeriod));
   servoArm.write(angle);
 
-  if (angle > 90 + 5) {//((angle > maxAngle + armCenter - sliceCoverageLR ) && (angle <= maxAngle + armCenter)){
+
+  if (angle > 90 + 40) {
     // Left slice
-    visibilitySlices[0] = sliceDecay*double(readingArm) + (1-sliceDecay)*visibilitySlices[0];
+    //visibilitySlices[0] = sliceDecay*double(readingArm) + (1-sliceDecay)*visibilitySlices[0];
+    if(readingArm == 1) {
+      visibilitySlices[0] = sliceDecayUp*double(readingArm) + (1-sliceDecayUp)*visibilitySlices[0];
+    }
+    else {
+      visibilitySlices[0] = sliceDecayDown*double(readingArm) + (1-sliceDecayDown)*visibilitySlices[0];
+    }
+
   }
-  else if (angle < 90 - 5) { //((angle > maxAngle + armCenter - sliceCoverageC ) && (angle <= maxAngle + armCenter - sliceCoverageLR )){
+  else if (angle < 90 - 40) {
     // Right slice
-     visibilitySlices[2] = sliceDecay*double(readingArm) + (1-sliceDecay)*visibilitySlices[2];
+     //visibilitySlices[2] = sliceDecay*double(readingArm) + (1-sliceDecay)*visibilitySlices[2];
+    if(readingArm == 1) {
+      visibilitySlices[2] = sliceDecayUp*double(readingArm) + (1-sliceDecayUp)*visibilitySlices[2];
+    }
+    else {
+      visibilitySlices[2] = sliceDecayDown*double(readingArm) + (1-sliceDecayDown)*visibilitySlices[2];
+    }
   }
   else {
     // Middle slice
-    visibilitySlices[1] = sliceDecay*double(readingArm) + (1-sliceDecay)*visibilitySlices[1];
+    //visibilitySlices[1] = sliceDecay*double(readingArm) + (1-sliceDecay)*visibilitySlices[1];
+    if(readingArm == 1) {
+      visibilitySlices[1] = sliceDecayUp*double(readingArm) + (1-sliceDecayUp)*visibilitySlices[1];
+    }
+    else {
+      visibilitySlices[1] = sliceDecayDown*double(readingArm) + (1-sliceDecayDown)*visibilitySlices[1];
+    }
   }
   /*else if ((angle > armCenter - maxAngle) && (angle <= maxAngle + armCenter - sliceCoverageC )){
     // Right slice
@@ -94,25 +114,50 @@ void loop(){
         
         rightRead = visibilitySlices[2];
         centreRead = visibilitySlices[1];
-        leftRead = visibilitySlices[0];
+        leftRead = visibilitySlices[0]; 
         
         Serial.print(leftRead);
         Serial.print("  ");
         Serial.print(centreRead);
         Serial.print("  ");
         Serial.println(rightRead);
+       
+        //rightWheel(0);//(1-centreRead)*(1-1.5*leftRead));
+        //leftWheel(0);//(1-centreRead)*(1-1.5*rightRead));
+
+        double tresh = 0.5;
+        if ((leftRead < tresh) && (centreRead < tresh) && (rightRead < tresh)){
+          //go forward
+        }
+        else if ((leftRead >= tresh) && (centreRead >= tresh) && (rightRead >= tresh)){
+          //turn around for one second
+        }
+        else if ((leftRead >= tresh) && (centreRead < tresh) && (rightRead < tresh)){
+        // turn a little bit away
+        }
+         else if ((leftRead < tresh) && (centreRead < tresh) && (rightRead >= tresh)){
+        // turn a little bit away
+         }
+          else if ((leftRead >= tresh) && (centreRead < tresh) && (rightRead >= tresh)){
+        //go forward
+         }        
+        else if ((leftRead >= tresh) && (centreRead >= tresh) && (rightRead < tresh)){
+        // turn away
+        }
+         else if ((leftRead < tresh) && (centreRead >= tresh) && (rightRead >= tresh)){
+        // turn away
+         }
         
-        rightWheel(0);//(1-centreRead)*(1-1.5*leftRead));
-        leftWheel(0);//(1-centreRead)*(1-1.5*rightRead));
         /*
-        if(centreRead > 0.9){
+        if(centreRead > 0.7){
           currState = 1;
           startTime = time;
           
           if(leftRead < rightRead) {
             turnRight = 1;
           }
-        }*/
+        }
+        */
         break;
       case 1: //rotate
         if(time - startTime < rotationTime) {
@@ -129,6 +174,21 @@ void loop(){
           currState = 0;
         }
         break;
+        
+        case 2:
+        // turn a little bit left
+        
+        case 3:
+        // turn a little bit right
+        
+        case 4:
+        // turn left
+        turnLeft()
+        
+        case 5:
+        // turn right
+         turnRight()
+       
  
  
      /* case 2: //idle state
@@ -140,7 +200,7 @@ void loop(){
           }else if (visibilitySlices[0] <= 0.1){                        // If only left whisker contact
             //Serial.println("left");
             turnRight();
-            //timer(true);
+            //timer(true); 
             currState=5;
           }else if (visibilitySlices[2] <= 0.1){                       // If only right whisker contact
             //Serial.println("right");
@@ -191,17 +251,17 @@ void forward(){
   leftWheel(1);
   rightWheel(1);
 }
-/*
-void turnLeft(){
+
+void turnLeft(double degree){
   leftWheel(-1);
   rightWheel(1);
 }
 
-void turnRight(){
+void turnRight(double degree){
   leftWheel(1);
   rightWheel(-1);                            
 }
-*/
+
 void backward(){
   leftWheel(-1);
   rightWheel(-1);
