@@ -4,10 +4,10 @@
 //////////// Parameters  //////////////////////////////////////////////////
 const int speedZero=1500;           //servo speed for zero
 const int speedMax=200;             //The servo number for max
-const double armPeriod = 1000;
+const double armPeriod = 2000;
 const int speedLeftIsMax=1;        //if left is higher, set to 1, else -1
 const int minePin = A3;
-const int criticalReading = 35;    //Below this reading mine is declared 
+const int criticalReading = 7;    //Below this reading mine is declared 
 const int rotationTime = 1000;     // If a mine is detected, rotate for this time
 const int maxAngle = 80;            //Range of movement
 const int armCenter = 90;           //middle position of arm
@@ -22,8 +22,8 @@ Servo servoRight;
 Servo servoArm;
 double visibilitySlices[] = {0, 0, 0};
 double sliceCoverageLR = (2*maxAngle)/(noOfSlices+1);
-double sliceCoverageC = 2*(2*maxAngle)/(noOfSlices+1);
-double sliceDecay = 0.5;
+double sliceCoverageC = (2*maxAngle)/(noOfSlices+1);
+double sliceDecay = 0.1;
 boolean turnRight = 1;       // Rotate in this direction if avoiding mine
 int currState = 0;
 unsigned long time;
@@ -66,23 +66,24 @@ void loop(){
   
   double angle = armCenter + maxAngle*sin(double(2*pi*millis())/(armPeriod));
   servoArm.write(angle);
-  
 
-  if ((angle > maxAngle + armCenter - sliceCoverageLR ) && (angle <= maxAngle + armCenter)){
-    // Right slice
+  if (angle > 90 + 5) {//((angle > maxAngle + armCenter - sliceCoverageLR ) && (angle <= maxAngle + armCenter)){
+    // Left slice
     visibilitySlices[0] = sliceDecay*double(readingArm) + (1-sliceDecay)*visibilitySlices[0];
   }
-  else if ((angle > maxAngle + armCenter - 2*sliceCoverageC ) && (angle <= maxAngle + armCenter - sliceCoverageLR )){
+  else if (angle < 90 - 5) { //((angle > maxAngle + armCenter - sliceCoverageC ) && (angle <= maxAngle + armCenter - sliceCoverageLR )){
+    // Right slice
+     visibilitySlices[2] = sliceDecay*double(readingArm) + (1-sliceDecay)*visibilitySlices[2];
+  }
+  else {
     // Middle slice
     visibilitySlices[1] = sliceDecay*double(readingArm) + (1-sliceDecay)*visibilitySlices[1];
   }
-  else if ((angle > armCenter - maxAngle) && (angle <= maxAngle + armCenter - sliceCoverageC )){
-    // Left slice
+  /*else if ((angle > armCenter - maxAngle) && (angle <= maxAngle + armCenter - sliceCoverageC )){
+    // Right slice
     visibilitySlices[2] = sliceDecay*double(readingArm) + (1-sliceDecay)*visibilitySlices[2];
   }
-  else{
-  }
-  
+  */
   //Serial.println(currState);
   //Start of statemachine
   
@@ -101,8 +102,8 @@ void loop(){
         Serial.print("  ");
         Serial.println(rightRead);
         
-        rightWheel((1-centreRead)*(1-1.5*leftRead));
-        leftWheel((1-centreRead)*(1-1.5*rightRead));
+        rightWheel(0);//(1-centreRead)*(1-1.5*leftRead));
+        leftWheel(0);//(1-centreRead)*(1-1.5*rightRead));
         /*
         if(centreRead > 0.9){
           currState = 1;
