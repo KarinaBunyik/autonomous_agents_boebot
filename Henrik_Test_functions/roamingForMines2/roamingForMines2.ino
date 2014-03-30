@@ -45,6 +45,7 @@ void setup(){                                 // Built-in initialization block
   servoLeft.attach(13);                      // Attach left signal to pin 13
   servoRight.attach(12);                     // Attach right signal to pin 12
   Serial.begin(9600); 
+  double turningTime = 0.0;
 }  
  
 void loop(){
@@ -127,25 +128,41 @@ void loop(){
 
         double tresh = 0.5;
         if ((leftRead < tresh) && (centreRead < tresh) && (rightRead < tresh)){
-          //go forward
+          forward();
         }
         else if ((leftRead >= tresh) && (centreRead >= tresh) && (rightRead >= tresh)){
+          timer(true);
+          turningTime = 1000.0;
+          currState = 1;
           //turn around for one second
         }
         else if ((leftRead >= tresh) && (centreRead < tresh) && (rightRead < tresh)){
+          timer(true);
+          turningTime = 100.0;
+          currState = 1;
         // turn a little bit away
         }
          else if ((leftRead < tresh) && (centreRead < tresh) && (rightRead >= tresh)){
+          timer(true);
+          turningTime = 100.0;
+          currState = 1;
         // turn a little bit away
          }
           else if ((leftRead >= tresh) && (centreRead < tresh) && (rightRead >= tresh)){
+        forward();
         //go forward
          }        
         else if ((leftRead >= tresh) && (centreRead >= tresh) && (rightRead < tresh)){
         // turn away
+          timer(true);
+          turningTime = 500.0;
+          currState = 1;
         }
          else if ((leftRead < tresh) && (centreRead >= tresh) && (rightRead >= tresh)){
         // turn away
+          timer(true);
+          turningTime = 500.0;
+          currState = 1;
          }
         
         /*
@@ -159,37 +176,29 @@ void loop(){
         }
         */
         break;
-      case 1: //rotate
-        if(time - startTime < rotationTime) {
-          if(turnRight){
+      case 1: //rotate right
+        if(millis() + timer() < turningTime) {
             rightWheel(1);
             leftWheel(-1);
           }
-          else{
-            rightWheel(-1);
-            leftWheel(1);            
+          else {
+            rightWheel(1);
+            leftWheel(1);
+            currState = 0;            
           }
-        }
-        else{
-          currState = 0;
-        }
         break;
         
-        case 2:
-        // turn a little bit left
-        
-        case 3:
-        // turn a little bit right
-        
-        case 4:
-        // turn left
-        turnLeft()
-        
-        case 5:
-        // turn right
-         turnRight()
-       
- 
+        case 2: //rotate left
+        if(millis() + timer() < turningTime) {
+            leftWheel(1);
+            rightWheel(-1);
+          }
+          else {
+            leftWheel(1);
+            rightWheel(1);
+            currState = 0;            
+          }
+        break;
  
      /* case 2: //idle state
           if ((visibilitySlices[0] <= 0.1) && (visibilitySlices[2] <= 0.1)){        // If both sensors have input
@@ -251,16 +260,17 @@ void forward(){
   leftWheel(1);
   rightWheel(1);
 }
-
-void turnLeft(double degree){
+/*
+void turnLeft(double turnTime){
   leftWheel(-1);
   rightWheel(1);
 }
 
-void turnRight(double degree){
+void turnRight(double turnTime){
   leftWheel(1);
   rightWheel(-1);                            
 }
+*/
 
 void backward(){
   leftWheel(-1);
