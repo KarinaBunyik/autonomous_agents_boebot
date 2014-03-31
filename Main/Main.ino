@@ -1,0 +1,138 @@
+// ROAMING FOR MINES
+// A basic behaviour for roming about, avoiding mines and
+// walls, while giving a sound in case of a mine.
+//////////// Constants  //////////////////////////////////////////////////
+const int speedZero=1500;           //servo speed for zero
+const int speedMax=100;             //The servo number for max
+const double armPeriod = 1000;      //The time to finish an arm sweep
+const int speedLeftIsMax = 1;        //if left is higher, set to 1, else -1
+const int minePin = A3;
+const int criticalReading = 20;    //Below this reading mine is declared 
+const int rotationTime = 1000;     // If a mine is critically close, rotate for this time
+const int maxAngle = 70;            //Range of arm movement
+const int armCenter = 90;           //middle position of arm
+const double pi = 3.14159265358979;
+
+////////////  Motors  /////////////////////////////////////////////////////
+#include <Servo.h>                           // Include servo library
+ 
+Servo servoLeft;                             // Declare left and right servos
+Servo servoRight;
+Servo servoArm;
+
+////////////  Variables  /////////////////////////////////////////////////////
+double visibilitySlices[] = {0, 0, 0};
+double sliceDecay = 0.5;
+double sliceDecaySlow = 0.1;
+int currState = 1;
+unsigned long time;
+unsigned long startTime;
+int mineSensor;
+int minePrevSensor;
+double rightRead;            // slice value right
+double centreRead;           // ...centre...
+double leftRead;             // ...right...
+
+void setup(){                                // Built-in initialization block
+  pinMode(7, INPUT);                         // Set right sensor pin to input
+  pinMode(5, INPUT);                         // Set left sensor pin to input 
+  
+  servoArm.attach(11);    
+  servoLeft.attach(13);                      // Attach left signal to pin 13
+  servoRight.attach(12);                     // Attach right signal to pin 12
+  Serial.begin(9600); 
+ 
+}  
+ 
+void loop(){
+  int readingArm = 0;//1 - irDetect(2, 3, 38000);       // Check for obstacles with IR
+  
+  mineSensor = analogRead(minePin);         // Is a mine spotted?
+  if(mineSensor < criticalReading && mineSensor!= 0) {
+    readingArm = 1;                                 // Is anything spotted?
+  }
+
+  Serial.println(mineSensor);
+  
+  double angle = armCenter + maxAngle*sin(double(2*pi*millis())/(armPeriod));
+  //double percAngle = armCenter + maxAngle*sin(double(2*pi*(millis()-40))/(armPeriod));
+
+  servoArm.write(angle);
+  delay(1);
+
+  if (angle > 90 + 30) {
+    // Left slice
+    visibilitySlices[0] = sliceDecay*double(readingArm) + (1-sliceDecay)*visibilitySlices[0];
+  }
+  else if (angle < 90 - 30) {
+    // Right slice
+    visibilitySlices[2] = sliceDecay*double(readingArm) + (1-sliceDecay)*visibilitySlices[2];
+  }
+  else {
+    // Middle slice
+    if(readingArm == 1) {
+      visibilitySlices[1] = sliceDecay*double(readingArm) + (1-sliceDecay)*visibilitySlices[1];
+    }
+    else {
+      visibilitySlices[1] = sliceDecaySlow*double(readingArm) + (1-sliceDecaySlow)*visibilitySlices[1];
+    }
+  }
+  
+  rightRead = visibilitySlices[2];
+  centreRead = visibilitySlices[1];
+  leftRead = visibilitySlices[0];
+        
+  switch (currState){
+      case 1:
+      
+        Serial.print(leftRead);
+        Serial.print("  ");
+        Serial.print(centreRead);
+        Serial.print("  ");
+        Serial.println(rightRead);
+        
+        if(centreRead < 0.7){
+          rightWheel((1-centreRead)*(1-leftRead));
+          leftWheel((1-centreRead)*(1-rightRead));
+        }
+        else {
+          currState = 2;
+        }
+        break;
+        
+      case 2:
+      
+        rightWheel(1);
+        leftWheel(-1);
+        
+        currState = 3;
+        
+      break;
+      case 3:
+        
+        if(centreRead < 0.1){
+          currState = 1;
+        } 
+      break;
+    }     
+}     
+
+//Sets the spped, input is the speed and should be between -1 and 1
+void leftWheel(double sp){ 
+  servoLeft.writeMicroseconds(speedZero+(double(speedMax)*sp)*speedLeftIsMax);
+}
+
+void rightWheel(double sp){ 
+  servoRight.writeMicroseconds(speedZero-double((speedMax)*sp)*speedLeftIsMax);
+}
+
+int irDetect(int irLedPin, int irReceiverPin, long frequency){
+  tone(irLedPin, frequency, 8);              
+  delay(1);                                  
+  int ir = digitalRead(irReceiverPin);       
+  delay(1);                                  
+  return ir;                                 
+}
+
+
+

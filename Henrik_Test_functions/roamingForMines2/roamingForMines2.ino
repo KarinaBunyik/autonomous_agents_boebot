@@ -4,17 +4,17 @@
 //////////// Parameters  //////////////////////////////////////////////////
 const int speedZero=1500;           //servo speed for zero
 const int speedMax=100;             //The servo number for max
-const double armPeriod = 2000;
+const double armPeriod = 1000;
 const int speedLeftIsMax = 1;        //if left is higher, set to 1, else -1
 const int minePin = A3;
-const int criticalReading = 10;    //Below this reading mine is declared 
+const int criticalReading = 20;    //Below this reading mine is declared 
 const int rotationTime = 1000;     // If a mine is detected, rotate for this time
 const int maxAngle = 70;            //Range of movement
 const int armCenter = 90;           //middle position of arm
 const int noOfSlices = 3;           //Mustn't be changed from 3
 const double pi = 3.14159265358979;
 double turningTime = 0.0;
-double tresh = 0.5;
+double tresh = 0.6;
 
 
 //dt=1;//miliseconds
@@ -27,8 +27,8 @@ Servo servoArm;
 double visibilitySlices[] = {0, 0, 0};
 double sliceCoverageLR = (2*maxAngle)/(noOfSlices+1);
 double sliceCoverageC = (2*maxAngle)/(noOfSlices+1);
-double sliceDecayUp = 0.7;
-double sliceDecayDown = 0.05;
+double sliceDecayUp = 0.5;
+double sliceDecayDown = 0.1;
 boolean turnRight = 1;       // Rotate in this direction if avoiding mine
 int currState = 0;
 unsigned long time;
@@ -53,7 +53,6 @@ void setup(){                                 // Built-in initialization block
 }  
  
 void loop(){
-  delay(10);
   //debugWrite(currState);
   //Serial.print("state = ");                     // Display "A3 = "
   //Serial.println(currState);                    // Display measured A3 volts
@@ -70,10 +69,11 @@ void loop(){
   //Serial.println(mineSensor);
   
   double angle = armCenter + maxAngle*sin(double(2*pi*millis())/(armPeriod));
+  //double percAngle = armCenter + maxAngle*sin(double(2*pi*(millis()-40))/(armPeriod));
   servoArm.write(angle);
+  delay(1);
 
-
-  if (angle > 90 + 40) {
+  if (angle > 90 + 30) {
     // Left slice
     //visibilitySlices[0] = sliceDecay*double(readingArm) + (1-sliceDecay)*visibilitySlices[0];
     if(readingArm == 1) {
@@ -84,7 +84,7 @@ void loop(){
     }
 
   }
-  else if (angle < 90 - 40) {
+  else if (angle < 90 - 30) {
     // Right slice
      //visibilitySlices[2] = sliceDecay*double(readingArm) + (1-sliceDecay)*visibilitySlices[2];
     if(readingArm == 1) {
@@ -121,23 +121,28 @@ void loop(){
         centreRead = visibilitySlices[1];
         leftRead = visibilitySlices[0]; 
         
-
         
         Serial.print(leftRead);
         Serial.print("  ");
         Serial.print(centreRead);
         Serial.print("  ");
         Serial.println(rightRead);
-       
+        
+        
         //rightWheel(0);//(1-centreRead)*(1-1.5*leftRead));
         //leftWheel(0);//(1-centreRead)*(1-1.5*rightRead));
 
 
         
-        if ((leftRead < tresh) && (centreRead < tresh) && (rightRead < tresh)){
-          forward();
+        if(1){//centreRead < tresh){//(leftRead < tresh) && (centreRead < tresh) && (rightRead < tresh)){
+          rightWheel((1-centreRead)*(1-leftRead));
+          leftWheel((1-centreRead)*(1-rightRead));
         }
-        else if ((leftRead >= tresh) && (centreRead >= tresh) && (rightRead >= tresh)){
+        else if (1) {
+          rightWheel(-1);
+          leftWheel(1);
+        }
+        else if (centreRead >= tresh){//((leftRead >= tresh) && (centreRead >= tresh) && (rightRead >= tresh)){
           timer(true);
           turningTime = 1000.0;
           currState = 1;
@@ -171,6 +176,7 @@ void loop(){
           turningTime = 500.0;
           currState = 2;
          }
+         
         break;
       case 1: //rotate right
         if(millis() + timer() < turningTime) {
