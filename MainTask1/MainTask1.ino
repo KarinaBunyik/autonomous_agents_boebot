@@ -23,7 +23,7 @@ Servo servoArm;
 ////////////  Variables  /////////////////////////////////////////////////////
 double visibilitySlices[] = {0, 0, 0};
 double irReading = 0.0;
-double irDecay = 0.2;
+double irDecay = 0.3;
 double sliceDecay = 0.4;
 double sliceDecaySlow = 0.15;
 int currState = 1;
