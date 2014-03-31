@@ -9,7 +9,7 @@ const int speedLeftIsMax = 1;        //if left is higher, set to 1, else -1
 const int minePin = A3;
 const int criticalReading = 15;    //Below this reading mine is declared 
 const int rotationTime = 1000;     // If a mine is critically close, rotate for this time
-const int maxAngle = 0;//70;            //Range of arm movement
+const int maxangleSet = 70;            //Range of arm movement
 const int armCenter = 90;           //middle position of arm
 const double pi = 3.14159265358979;
 
@@ -44,6 +44,7 @@ void setup(){                                // Built-in initialization block
 }  
  
 void loop(){
+  delay(1);
   int readingArm = 0;//1 - irDetect(2, 3, 38000);       // Check for obstacles with IR
   
   mineSensor = analogRead(minePin);         // Is a mine spotted?
@@ -51,19 +52,18 @@ void loop(){
     readingArm = 1;                                 // Is anything spotted?
   }
 
-  Serial.println(mineSensor);
+  //Serial.println(mineSensor);
   
-  double angle = armCenter + maxAngle*sin(double(2*pi*millis())/(armPeriod));
-  //double percAngle = armCenter + maxAngle*sin(double(2*pi*(millis()-40))/(armPeriod));
+  double angleSet = armCenter + maxangleSet*sin(double(2*pi*millis())/(armPeriod));
+  double angleReal = armCenter + maxangleSet*sin(double(2*pi*(millis()-0))/(armPeriod));
 
-  servoArm.write(angle);
-  delay(1);
+  servoArm.write(angleSet);
 
-  if (angle > 90 + 30) {
+  if (angleReal > 90 + 30) {
     // Left slice
     visibilitySlices[0] = sliceDecay*double(readingArm) + (1-sliceDecay)*visibilitySlices[0];
   }
-  else if (angle < 90 - 30) {
+  else if (angleReal < 90 - 30) {
     // Right slice
     visibilitySlices[2] = sliceDecay*double(readingArm) + (1-sliceDecay)*visibilitySlices[2];
   }
