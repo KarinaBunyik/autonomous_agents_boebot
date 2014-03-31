@@ -22,8 +22,8 @@ Servo servoArm;
 
 ////////////  Variables  /////////////////////////////////////////////////////
 double visibilitySlices[] = {0, 0, 0};
-double sliceDecay = 0.5;
-double sliceDecaySlow = 0.05;
+double sliceDecay = 0.4;
+double sliceDecaySlow = 0.15;
 int currState = 1;
 unsigned long time;
 unsigned long startTime;
@@ -50,7 +50,8 @@ void loop(){
   
   mineSensor = analogRead(minePin);         // Is a mine spotted?
   if(mineSensor < criticalReading) {
-    readingArm = 1;                                 // Is anything spotted?
+    readingArm = 1;                                 // A mine is spotted
+    tone(4,200,10);
   }
 
   //Serial.println(mineSensor);
@@ -102,15 +103,21 @@ void loop(){
         
       case 2:
       
-        rightWheel(1);
-        leftWheel(-1);
+        if(leftRead < rightRead){
+          rightWheel(1);
+          leftWheel(-1);
+        }
+        else {
+          rightWheel(-1);
+          leftWheel(1);
+        }
         
         currState = 3;
         
       break;
       case 3:
         
-        if(centreRead < 0.5){
+        if(centreRead < 0.2){
           currState = 1;
         } 
       break;
