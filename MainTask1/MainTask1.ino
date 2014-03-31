@@ -7,9 +7,9 @@ const int speedMax=100;             //The servo number for max
 const double armPeriod = 1000;      //The time to finish an arm sweep
 const int speedLeftIsMax = 1;        //if left is higher, set to 1, else -1
 const int minePin = A3;
-const int criticalReading = 20;    //Below this reading mine is declared 
+const int criticalReading = 15;    //Below this reading mine is declared 
 const int rotationTime = 1000;     // If a mine is critically close, rotate for this time
-const int maxAngle = 70;            //Range of arm movement
+const int maxAngle = 0;//70;            //Range of arm movement
 const int armCenter = 90;           //middle position of arm
 const double pi = 3.14159265358979;
 
@@ -40,15 +40,14 @@ void setup(){                                // Built-in initialization block
   servoArm.attach(11);    
   servoLeft.attach(13);                      // Attach left signal to pin 13
   servoRight.attach(12);                     // Attach right signal to pin 12
-  Serial.begin(9600); 
- 
+  Serial.begin(9600);
 }  
  
 void loop(){
   int readingArm = 0;//1 - irDetect(2, 3, 38000);       // Check for obstacles with IR
   
   mineSensor = analogRead(minePin);         // Is a mine spotted?
-  if(mineSensor < criticalReading && mineSensor!= 0) {
+  if(mineSensor < criticalReading) {
     readingArm = 1;                                 // Is anything spotted?
   }
 
@@ -81,16 +80,17 @@ void loop(){
   rightRead = visibilitySlices[2];
   centreRead = visibilitySlices[1];
   leftRead = visibilitySlices[0];
-        
+  
+  Serial.print(leftRead);
+  Serial.print("  ");
+  Serial.print(centreRead);
+  Serial.print("  ");
+  Serial.println(rightRead);
+  
+  /*      
   switch (currState){
       case 1:
-      
-        Serial.print(leftRead);
-        Serial.print("  ");
-        Serial.print(centreRead);
-        Serial.print("  ");
-        Serial.println(rightRead);
-        
+
         if(centreRead < 0.7){
           rightWheel((1-centreRead)*(1-leftRead));
           leftWheel((1-centreRead)*(1-rightRead));
@@ -115,6 +115,7 @@ void loop(){
         } 
       break;
     }     
+    */
 }     
 
 //Sets the spped, input is the speed and should be between -1 and 1
