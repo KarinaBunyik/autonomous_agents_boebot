@@ -1,6 +1,0 @@
-function arena = CreateArena(name,size,objectArray)
-
-arena = struct('Name',name,...
-               'Size',size,...
-               'Objects',objectArray);
-             
