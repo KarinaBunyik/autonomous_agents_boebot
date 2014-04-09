@@ -2,9 +2,9 @@
 // in order to help us deside how to use the sonar.
 //////////// Constants  //////////////////////////////////////////////////
 const int speedZero=1500;               //servo speed for zero
-const int speedMax=100;                 //The servo number for max
+const int speedMax=200;                 //The servo number for max
 const int speedLeftIsMax = 1;           //if left is higher, set to 1, else -1
-const int rotationIterations = 100;     //time to rotate left and then back
+const int rotationIterations = 20;     //time to rotate left and then back
 const int pingPin = 7;
 const double pi = 3.14159265358979;
 
@@ -16,7 +16,7 @@ Servo servoRight;
 
 ////////////  Variables  /////////////////////////////////////////////////////
 int sonarReading = 0;
-int currState = 1;
+int currState = 0;
 int iteration = 0;
 
 void setup(){                                // Built-in initialization block
@@ -58,6 +58,11 @@ void loop()
   delay(100);
   
   switch(currState) {
+    case 0:
+      leftWheel(0);
+      rightWheel(0);
+    break;
+      
     case 1:
       leftWheel(0.3);
       rightWheel(-0.3);
