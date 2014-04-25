@@ -3,8 +3,8 @@
 // direction of the readings. Later bundle them together into
 // three main visibility slizes (as in task 1)
 //////////// Constants  ////////////////////////////////////////
-const double scanPeriod = 5000;      //The temporal length of a sweep
-const int sweepCenter = 90;          //middle position of arm
+const double scanPeriod = 2000;      //The temporal length of a sweep
+const int sweepCenter = 96;          //middle position of arm
 const int sweepAmplitude = 60;       //sweepangle from centre
 const int sonarPin = 6;
 const double pi = 3.14159265358979;
@@ -19,6 +19,7 @@ int currState = 1;
 double rightRead;            // slice value right
 double centreRead;           // ...centre...
 double leftRead;             // ...right...
+long sonarReading = 0;
 
 void setup(){                                // Built-in initialization block
   pinMode(7, INPUT);                         // Set right sensor pin to input
@@ -31,13 +32,20 @@ void setup(){                                // Built-in initialization block
  
 void loop(){
   delay(10);
-  long sonarReading = readSonar(sonarPin);
+  double sonarDecay = 1;
+  int angleOffset = -500;
+  
+  sonarReading = (1-sonarDecay)*sonarReading + 
+                 sonarDecay*readSonar(sonarPin);
 
-  double angleSet = sweepCenter + sweepAmplitude*sin(double(2*pi*millis())/(scanPeriod));
+  double angleSet = sweepCenter +
+                     sweepAmplitude*asin(sin(double(2*pi*millis())/(scanPeriod)))*2/pi;
+  
+  double angleReal = sweepCenter + 
+                     sweepAmplitude*asin(sin(double(2*pi*millis() + angleOffset)/(scanPeriod)))*2/pi;
   servoSweep.write(digitalRead(7) ? angleSet : sweepCenter);
   
-  //double angleReal = sweepCenter + sweepAmplitude*sin(double(2*pi*(millis()-100))/(scanPeriod));
-  int angle = floor(angleSet)+sweepAmplitude-sweepCenter;
+  int angle = floor(angleReal)+sweepAmplitude-sweepCenter;
   readingFromAngle[angle] = sonarReading;
   
   Serial.print(angle);
