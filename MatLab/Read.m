@@ -31,7 +31,7 @@ for i = 1:3000
     oldAngle = angle;
         
     set(plotHandle,'YData',values)
-    ylim([0 350])
+    ylim([0 320])
     drawnow;
 end
 
