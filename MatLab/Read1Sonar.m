@@ -32,6 +32,7 @@ for i = 1:3000
         
     set(plotHandle,'YData',values)
     ylim([0 320])
+    xlim([0 120])
     drawnow;
 end
 

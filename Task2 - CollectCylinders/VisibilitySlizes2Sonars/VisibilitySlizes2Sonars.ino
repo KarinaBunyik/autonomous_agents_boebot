@@ -1,12 +1,13 @@
-// VISIBILITY_SLIZES_1_SONAR
-// Scan sourounding with one sonar and keep track of the
-// direction of the readings. Later bundle them together into
-// three main visibility slizes (as in task 1)
+// VISIBILITY_SLIZES_2_SONARS
+// Scan sourounding with two sonars and keep track of the
+// direction of the readings. The main goal is to separate
+// low obstacles as cylinders from taller ones, such as walls.
 //////////// Constants  ////////////////////////////////////////
 const double scanPeriod = 1000;      //The temporal length of a sweep
 const int sweepCenter = 96;          //middle position of arm
 const int sweepAmplitude = 60;       //sweepangle from centre
-const int sonarPin = 6;
+const int lowPin  = 5;
+const int highPin = 6;
 const double pi = 3.14159265358979;
 
 ////////////  Motors  /////////////////////////////////////////////////////
@@ -14,17 +15,14 @@ const double pi = 3.14159265358979;
 Servo servoSweep;
 
 ////////////  Variables  /////////////////////////////////////////////////////
-long readingFromAngle[2*sweepAmplitude+1] = {0}; //"+1" if floor(140.0)
+long lowReadings[2*sweepAmplitude+1] = {0}; //"+1" if floor(140.0)
+long highReadings[2*sweepAmplitude+1] = {0}; //"+1" if floor(140.0)
 int currState = 1;
-double rightRead;            // slice value right
-double centreRead;           // ...centre...
-double leftRead;             // ...right...
-long sonarReading = 0;
+long lowValue  = 0;
+long highValue = 0;
 
 void setup(){                                // Built-in initialization block
-  pinMode(7, INPUT);                         // Set right sensor pin to input
-  pinMode(5, INPUT);                         // Set left sensor pin to input 
-  pinMode(4, OUTPUT); 
+  pinMode(7, INPUT);                         // Centering button
   
   servoSweep.attach(11);    
   Serial.begin(9600);
@@ -32,26 +30,39 @@ void setup(){                                // Built-in initialization block
  
 void loop(){
   delay(10);
-  int angleOffset = -500;
+  double sonarDecay = 1;
+  int angleOffset = -600; //-500
   
-  sonarReading = readSonar(sonarPin);
-
+  highValue = (1-sonarDecay)*highValue + 
+                 sonarDecay*readSonar(highPin);
+  //if(highValue > 150){
+  //  highValue = 300;
+  //}
+  
+  delay(10);
+  lowValue = (1-sonarDecay)*lowValue + 
+                 sonarDecay*readSonar(lowPin);
+  //if(lowValue > 150){
+  //  lowValue = 300;
+  //}
+                 
+  delay(10);
   double angleSet = sweepCenter +
                      sweepAmplitude*asin(sin(double(2*pi*millis())/(scanPeriod)))*2/pi;
   
   double angleReal = sweepCenter + 
                      sweepAmplitude*asin(sin(double(2*pi*millis() + angleOffset)/(scanPeriod)))*2/pi;
-                     
-  //servoSweep.attach(11);
   servoSweep.write(digitalRead(7) ? angleSet : sweepCenter);
-  //servoSweep.detach();
   
   int angle = floor(angleReal)+sweepAmplitude-sweepCenter;
-  readingFromAngle[angle] = sonarReading;
+  lowReadings[angle] = lowValue;
+  highReadings[angle] = highValue;
   
   Serial.print(angle);
   Serial.print(" ");
-  Serial.println(sonarReading);  
+  Serial.print(lowValue); 
+  Serial.print(" ");
+  Serial.println(highValue);  
 }     
 
 long readSonar(int pin) {
