@@ -1,44 +1,53 @@
-%fclose(s);
-%delete(s);
+try
+    fclose(s);
+    delete(s);
+catch
+end
 
 %clear
 %clc
+clf
 
 s = serial('COM8','BaudRate',9600);
 fopen(s);
-low  = zeros(120,1);
-high = zeros(120,1);
-blueHandle = plot(-(-59:60),high);
+redone  = zeros(100,1);
+blueone = zeros(100,1);
+blueHandle = plot(-(-49:50),blueone);
 hold on;
-redHandle = plot(-(-59:60),low,'red');
-fscanf(s,'%u');
+redHandle = plot(-(-49:50),redone,'red');
+fscanf(s,'%u')
 oldAngle = fscanf(s,'%u');
 oldAngle = oldAngle(1);
 
 decay = 1;
-for i = 1:10000
+for i = 1:100
     reading = fscanf(s,'%u');
-    angle = reading(1)+1;
     
-    if angle > 120
-        angle = 120;
+    angle = reading(1);
+    
+    if angle > 100
+        angle = 100;
     end
     
     if angle > oldAngle
-        low(oldAngle+1:angle) = (1-decay)*low(oldAngle+1:angle)+...
+        redone(oldAngle+1:angle) = (1-decay)*redone(oldAngle+1:angle)+...
                                        decay*reading(2);
-        high(oldAngle+1:angle) = (1-decay)*high(oldAngle+1:angle)+...
+        blueone(oldAngle+1:angle) = (1-decay)*blueone(oldAngle+1:angle)+...
                                        decay*reading(3);
     elseif angle < oldAngle
-        low(angle:oldAngle-1) = (1-decay)*low(angle:oldAngle-1)+...
+        redone(angle:oldAngle-1) = (1-decay)*redone(angle:oldAngle-1)+...
                                        decay*reading(2);
-        high(angle:oldAngle-1) = (1-decay)*high(angle:oldAngle-1)+...
+        blueone(angle:oldAngle-1) = (1-decay)*blueone(angle:oldAngle-1)+...
                                        decay*reading(3);
     end
     oldAngle = angle;
-    set(blueHandle,'YData',high)
-    set(redHandle,'YData',low)
-    ylim([0 320])
+    set(blueHandle,'YData',blueone)
+    set(redHandle,'YData',redone)
+    ylim([0 400])
+    xlim([-60 60])
+    ylabel('Distance')
+    xlabel('Angle')
+    legend('Cylinder','Wall')
     drawnow;
 end
 hold off;

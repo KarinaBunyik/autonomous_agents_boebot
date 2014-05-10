@@ -3,9 +3,9 @@
 // direction of the readings. The main goal is to separate
 // low obstacles as cylinders from taller ones, such as walls.
 //////////// Constants  ////////////////////////////////////////
-const double scanPeriod = 1000;      //The temporal length of a sweep
+const double scanPeriod = 2000;      //The temporal length of a sweep
 const int sweepCenter = 96;          //middle position of arm
-const int sweepAmplitude = 60;       //sweepangle from centre
+const int sweepAmplitude = 50;       //sweepangle from centre
 const int lowPin  = 5;
 const int highPin = 6;
 const double pi = 3.14159265358979;
@@ -31,7 +31,7 @@ void setup(){                                // Built-in initialization block
 void loop(){
   delay(10);
   double sonarDecay = 1;
-  int angleOffset = -600; //-500
+  int angleOffset = -800; //-500
   
   highValue = (1-sonarDecay)*highValue + 
                  sonarDecay*readSonar(highPin);
@@ -39,14 +39,14 @@ void loop(){
   //  highValue = 300;
   //}
   
-  delay(10);
+  delay(20);
   lowValue = (1-sonarDecay)*lowValue + 
                  sonarDecay*readSonar(lowPin);
   //if(lowValue > 150){
   //  lowValue = 300;
   //}
                  
-  delay(10);
+  //delay(10);
   double angleSet = sweepCenter +
                      sweepAmplitude*asin(sin(double(2*pi*millis())/(scanPeriod)))*2/pi;
   
@@ -57,12 +57,13 @@ void loop(){
   int angle = floor(angleReal)+sweepAmplitude-sweepCenter;
   lowReadings[angle] = lowValue;
   highReadings[angle] = highValue;
+  //delay(10);
   
   Serial.print(angle);
   Serial.print(" ");
   Serial.print(lowValue); 
   Serial.print(" ");
-  Serial.println(highValue);  
+  Serial.println(highValue);
 }     
 
 long readSonar(int pin) {
