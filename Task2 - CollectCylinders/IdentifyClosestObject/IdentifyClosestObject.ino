@@ -6,7 +6,7 @@
 //          r - Distance to closest object
 //          a - Angle to closest object, Span=[-aMax,+aMax]
 //////////// Constants  ////////////////////////////////////////
-const int nScanSteps = 40;          //How many measurements to
+const int nScanSteps = 20;          //How many measurements to
                                      //take for each scan
                                      
 const int angleCorrection = 90;      //Middle position of scanners
@@ -63,9 +63,11 @@ void loop(){
                 angleCorrection + setAngle : angleCorrection);
   
   // Current readings
+  delay(10);
   s2_reading = readSonar(s2_pin);
-  delay(20);
+  delay(10);
   s1_reading  = readSonar(s1_pin);
+  
   
   //------------ SCANNER 1 ------------\\
   // Object begins
@@ -93,7 +95,7 @@ void loop(){
     s1_objSide2 = setAngle;
   }
 
-  //------------ SCANNER 1 ------------\\
+  //------------ SCANNER 2 ------------\\
   // Object begins
   if(s2_reading < s2_tmpMin - distTol) {
     // Define new minima, first side found
