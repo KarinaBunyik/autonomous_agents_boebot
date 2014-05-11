@@ -10,23 +10,27 @@ clf
 
 s = serial('COM8','BaudRate',9600);
 fopen(s);
-redone  = zeros(100,1);
-blueone = zeros(100,1);
-blueHandle = plot(-(-49:50),blueone);
+redone  = zeros(80,1);
+blueone = zeros(80,1);
+blueHandle = plot(-(-39:40),blueone);
 hold on;
-redHandle = plot(-(-49:50),redone,'red');
-fscanf(s,'%u')
+redHandle = plot(-(-39:40),redone,'red');
+fscanf(s,'%u');
 oldAngle = fscanf(s,'%u');
 oldAngle = oldAngle(1);
 
 decay = 1;
-for i = 1:100
+for i = 1:10000
     reading = fscanf(s,'%u');
+    
+    while s.BytesAvailable > 0
+        fscanf(s,'%u');
+    end
     
     angle = reading(1);
     
-    if angle > 100
-        angle = 100;
+    if angle > 80
+        angle = 80;
     end
     
     if angle > oldAngle
@@ -44,10 +48,10 @@ for i = 1:100
     set(blueHandle,'YData',blueone)
     set(redHandle,'YData',redone)
     ylim([0 400])
-    xlim([-60 60])
+    xlim([-50 50])
     ylabel('Distance')
     xlabel('Angle')
-    legend('Cylinder','Wall')
+    legend('Wall','Cylinder')
     drawnow;
 end
 hold off;
