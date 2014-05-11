@@ -1,3 +1,6 @@
+// WORKING VERSION!! DON'T CHANGE
+// This works for lower sonar.
+
 // IDENTIFY_CLOSEST_OBJECT
 // - Scan left and right using 2 sonars.
 // - One scan is to go from -50->50 or vice versa.

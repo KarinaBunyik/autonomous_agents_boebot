@@ -1,3 +1,5 @@
+% Accounts for lower scanner only
+
 try
     fclose(s);
     delete(s);
